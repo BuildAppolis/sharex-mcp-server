@@ -26,7 +26,11 @@ Write-Host "Installing to: $installDir" -ForegroundColor Cyan
 if (Test-Path $installDir) {
     Write-Host "Directory exists. Updating..." -ForegroundColor Yellow
     Set-Location $installDir
-    git pull 2>$null || Write-Host "Not a git repository, continuing..."
+    try {
+        git pull 2>$null
+    } catch {
+        Write-Host "Not a git repository, continuing..."
+    }
 } else {
     Write-Host "Downloading ShareX MCP Server..." -ForegroundColor Yellow
     git clone https://github.com/hellocory/sharex-mcp-server.git $installDir 2>$null

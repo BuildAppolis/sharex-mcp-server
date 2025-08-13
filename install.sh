@@ -115,89 +115,53 @@ echo ""
 echo "Building project..."
 pnpm build
 
-# Configure for Claude Code in WSL
+# Configure for Claude Code
 echo ""
-echo "Configuring Claude Code for WSL..."
+echo "Configuring Claude Code..."
 
-# Create .claude directory if it doesn't exist
-CLAUDE_DIR="$HOME/.claude"
-mkdir -p "$CLAUDE_DIR"
-
-# Claude MCP config path in WSL
-MCP_CONFIG_PATH="$CLAUDE_DIR/.mcp.json"
-
-# Check if .mcp.json exists and back it up
-if [ -f "$MCP_CONFIG_PATH" ]; then
-    echo "Backing up existing .mcp.json to .mcp.json.backup"
-    cp "$MCP_CONFIG_PATH" "$MCP_CONFIG_PATH.backup"
+# Check if Claude Code is installed
+if command -v claude &> /dev/null; then
+    echo "Registering ShareX MCP server with Claude Code..."
     
-    # Read existing settings and merge MCP configuration
-    if command -v jq &> /dev/null; then
-        # If jq is available, merge properly
-        jq --arg cmd "node" \
-           --arg path "${INSTALL_DIR}/dist/index.js" \
-           '.mcpServers.sharex = {"command": $cmd, "args": [$path], "env": {}}' \
-           "$MCP_CONFIG_PATH.backup" > "$MCP_CONFIG_PATH"
+    # Remove existing ShareX server if it exists
+    claude mcp remove sharex 2>/dev/null || true
+    
+    # Add the ShareX MCP server using stdio transport
+    claude mcp add sharex --scope user -- node "${INSTALL_DIR}/dist/index.js"
+    
+    if [ $? -eq 0 ]; then
+        echo "✓ ShareX MCP server registered successfully!"
     else
-        # Manual merge - just overwrite with MCP server config preserved
-        echo "Note: jq not found, creating new MCP config"
-        cat > "$MCP_CONFIG_PATH" << EOF
-{
-  "mcpServers": {
-    "sharex": {
-      "command": "node",
-      "args": ["${INSTALL_DIR}/dist/index.js"],
-      "env": {}
-    }
-  }
-}
-EOF
+        echo "⚠ Warning: Failed to register MCP server automatically"
+        echo "  You can register it manually later with:"
+        echo "  claude mcp add sharex --scope user -- node \"${INSTALL_DIR}/dist/index.js\""
     fi
 else
-    # Create new .mcp.json
-    cat > "$MCP_CONFIG_PATH" << EOF
-{
-  "mcpServers": {
-    "sharex": {
-      "command": "node",
-      "args": ["${INSTALL_DIR}/dist/index.js"],
-      "env": {}
-    }
-  }
-}
-EOF
+    echo "⚠ Claude Code not found in PATH"
+    echo "  After installing Claude Code, register the MCP server with:"
+    echo "  claude mcp add sharex --scope user -- node \"${INSTALL_DIR}/dist/index.js\""
 fi
 
-echo "✓ Created MCP configuration at: $MCP_CONFIG_PATH"
-
-# Also create a Windows-compatible version if needed
-WIN_INSTALL_DIR=$(wsl_to_windows_path "$INSTALL_DIR")
-WIN_CLAUDE_DIR="${WSL_USER_PROFILE}/.claude"
-WIN_MCP_CONFIG="${WIN_CLAUDE_DIR}/.mcp.json"
-
-# Create Windows .claude directory through WSL
-mkdir -p "$WIN_CLAUDE_DIR"
-
-# Check if Windows .mcp.json exists and back it up
-if [ -f "$WIN_MCP_CONFIG" ]; then
-    echo "Backing up existing Windows .mcp.json"
-    cp "$WIN_MCP_CONFIG" "$WIN_MCP_CONFIG.backup"
+# Also register for Windows if we're in WSL and Windows Claude is available
+if [ "$IS_WSL" = true ]; then
+    WIN_INSTALL_DIR=$(wsl_to_windows_path "$INSTALL_DIR")
+    
+    # Try to register with Windows Claude through cmd.exe
+    if cmd.exe /c "where claude" &>/dev/null 2>&1; then
+        echo ""
+        echo "Registering with Windows Claude Code..."
+        cmd.exe /c "claude mcp remove sharex" 2>/dev/null || true
+        cmd.exe /c "claude mcp add sharex --scope user -- cmd /c node \"${WIN_INSTALL_DIR}\\dist\\index.js\"" 2>/dev/null
+        
+        if [ $? -eq 0 ]; then
+            echo "✓ Registered with Windows Claude Code"
+        else
+            echo "⚠ Could not register with Windows Claude automatically"
+            echo "  Register manually in Windows with:"
+            echo "  claude mcp add sharex --scope user -- cmd /c node \"${WIN_INSTALL_DIR}\\dist\\index.js\""
+        fi
+    fi
 fi
-
-# Create Windows version through WSL
-cat > "$WIN_MCP_CONFIG" << EOF
-{
-  "mcpServers": {
-    "sharex": {
-      "command": "node",
-      "args": ["${WIN_INSTALL_DIR}\\dist\\index.js"],
-      "env": {}
-    }
-  }
-}
-EOF
-
-echo "✓ Created Windows MCP configuration at: $WIN_MCP_CONFIG"
 
 echo ""
 echo -e "\033[32m✅ Installation complete!\033[0m"
@@ -207,8 +171,7 @@ echo "1. Restart Claude Code to load the MCP server"
 echo "2. Take a screenshot with ShareX (on Windows)"
 echo "3. Tell Claude: \"look at my latest screenshot\""
 echo ""
-echo -e "\033[33mConfiguration files created:\033[0m"
-echo "  WSL:     $MCP_CONFIG_PATH"
-echo "  Windows: $(wsl_to_windows_path "$WIN_MCP_CONFIG")"
+echo "The MCP server is installed at: $INSTALL_DIR"
 echo ""
-echo "The MCP server will run from: $INSTALL_DIR"
+echo "To verify the MCP server is working:"
+echo "  claude mcp list"

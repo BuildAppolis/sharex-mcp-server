@@ -54,35 +54,31 @@ pnpm build
 # Configure MCP for Claude Code
 Write-Host "Configuring Claude Code..." -ForegroundColor Yellow
 
-# Create .claude directory if it doesn't exist
-$claudeDir = "$env:USERPROFILE\.claude"
-if (!(Test-Path $claudeDir)) {
-    New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
-}
-
-# Create .mcp.json configuration for Windows
-$mcpConfigPath = "$claudeDir\.mcp.json"
 $serverPath = "$installDir\dist\index.js"
 
-# Check if .mcp.json exists and back it up
-if (Test-Path $mcpConfigPath) {
-    Write-Host "Backing up existing .mcp.json to .mcp.json.backup" -ForegroundColor Yellow
-    Copy-Item $mcpConfigPath "$mcpConfigPath.backup"
-}
-
-# Create the MCP configuration
-$mcpConfig = @{
-    mcpServers = @{
-        sharex = @{
-            command = "node"
-            args = @($serverPath.Replace('\', '\\'))
-            env = @{}
-        }
+# Check if Claude Code is installed
+if (Get-Command claude -ErrorAction SilentlyContinue) {
+    Write-Host "Registering ShareX MCP server with Claude Code..." -ForegroundColor Yellow
+    
+    # Remove existing ShareX server if it exists
+    claude mcp remove sharex 2>$null
+    
+    # Add the ShareX MCP server using stdio transport
+    # On Windows, we need to use cmd /c wrapper for proper execution
+    claude mcp add sharex --scope user -- cmd /c node "$serverPath"
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "ShareX MCP server registered successfully!" -ForegroundColor Green
+    } else {
+        Write-Host "Warning: Failed to register MCP server automatically" -ForegroundColor Yellow
+        Write-Host "You can register it manually later with:" -ForegroundColor Yellow
+        Write-Host "  claude mcp add sharex --scope user -- cmd /c node `"$serverPath`"" -ForegroundColor White
     }
-} | ConvertTo-Json -Depth 10
-
-Set-Content -Path $mcpConfigPath -Value $mcpConfig
-Write-Host "Created MCP configuration at: $mcpConfigPath" -ForegroundColor Green
+} else {
+    Write-Host "Claude Code not found in PATH" -ForegroundColor Yellow
+    Write-Host "After installing Claude Code, register the MCP server with:" -ForegroundColor Yellow
+    Write-Host "  claude mcp add sharex --scope user -- cmd /c node `"$serverPath`"" -ForegroundColor White
+}
 
 Write-Host ""
 Write-Host "Installation complete!" -ForegroundColor Green
@@ -92,5 +88,7 @@ Write-Host "1. Restart Claude Code to load the MCP server"
 Write-Host "2. Take a screenshot with ShareX"
 Write-Host "3. Tell Claude: 'look at my latest screenshot'"
 Write-Host ""
-Write-Host "Configuration file: $mcpConfigPath" -ForegroundColor Yellow
 Write-Host "Server location: $serverPath" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "To verify the MCP server is working:" -ForegroundColor Yellow
+Write-Host "  claude mcp list" -ForegroundColor White

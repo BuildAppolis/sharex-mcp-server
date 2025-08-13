@@ -34,7 +34,7 @@ if (Test-Path $installDir) {
     if ($LASTEXITCODE -ne 0) {
         # Fallback to downloading as zip
         $tempZip = "$env:TEMP\sharex-mcp-server.zip"
-        Invoke-WebRequest -Uri "https://github.com/hellocory/sharex-mcp-server/archive/main.zip" -OutFile $tempZip
+        Invoke-WebRequest -Uri "https://github.com/hellocory/sharex-mcp-server/archive/refs/heads/main.zip" -OutFile $tempZip
         Expand-Archive -Path $tempZip -DestinationPath $env:USERPROFILE -Force
         Rename-Item "$env:USERPROFILE\sharex-mcp-server-main" $installDir
         Remove-Item $tempZip

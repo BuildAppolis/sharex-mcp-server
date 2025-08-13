@@ -119,17 +119,29 @@ pnpm build
 echo ""
 echo "Configuring Claude Code for WSL..."
 
-# Create .mcp.json in WSL home directory
-MCP_CONFIG_PATH="$HOME/.mcp.json"
+# Create .claude directory if it doesn't exist
+CLAUDE_DIR="$HOME/.claude"
+mkdir -p "$CLAUDE_DIR"
 
-# Check if .mcp.json exists and back it up
+# Claude settings path in WSL
+MCP_CONFIG_PATH="$CLAUDE_DIR/settings.json"
+
+# Check if settings.json exists and back it up
 if [ -f "$MCP_CONFIG_PATH" ]; then
-    echo "Backing up existing .mcp.json to .mcp.json.backup"
+    echo "Backing up existing settings.json to settings.json.backup"
     cp "$MCP_CONFIG_PATH" "$MCP_CONFIG_PATH.backup"
-fi
-
-# Create the MCP configuration
-cat > "$MCP_CONFIG_PATH" << EOF
+    
+    # Read existing settings and merge MCP configuration
+    if command -v jq &> /dev/null; then
+        # If jq is available, merge properly
+        jq --arg cmd "node" \
+           --arg path "${INSTALL_DIR}/dist/index.js" \
+           '.mcpServers.sharex = {"command": $cmd, "args": [$path], "env": {}}' \
+           "$MCP_CONFIG_PATH.backup" > "$MCP_CONFIG_PATH"
+    else
+        # Manual merge - just overwrite with MCP server config preserved
+        echo "Note: jq not found, creating new settings with MCP server config"
+        cat > "$MCP_CONFIG_PATH" << EOF
 {
   "mcpServers": {
     "sharex": {
@@ -140,12 +152,37 @@ cat > "$MCP_CONFIG_PATH" << EOF
   }
 }
 EOF
+    fi
+else
+    # Create new settings.json
+    cat > "$MCP_CONFIG_PATH" << EOF
+{
+  "mcpServers": {
+    "sharex": {
+      "command": "node",
+      "args": ["${INSTALL_DIR}/dist/index.js"],
+      "env": {}
+    }
+  }
+}
+EOF
+fi
 
 echo "✓ Created MCP configuration at: $MCP_CONFIG_PATH"
 
 # Also create a Windows-compatible version if needed
 WIN_INSTALL_DIR=$(wsl_to_windows_path "$INSTALL_DIR")
-WIN_MCP_CONFIG="${WSL_USER_PROFILE}/.mcp.json"
+WIN_CLAUDE_DIR="${WSL_USER_PROFILE}/.claude"
+WIN_MCP_CONFIG="${WIN_CLAUDE_DIR}/settings.json"
+
+# Create Windows .claude directory through WSL
+mkdir -p "$WIN_CLAUDE_DIR"
+
+# Check if Windows settings.json exists and back it up
+if [ -f "$WIN_MCP_CONFIG" ]; then
+    echo "Backing up existing Windows settings.json"
+    cp "$WIN_MCP_CONFIG" "$WIN_MCP_CONFIG.backup"
+fi
 
 # Create Windows version through WSL
 cat > "$WIN_MCP_CONFIG" << EOF

@@ -30,8 +30,8 @@ Built by [BuildAppolis](https://www.buildappolis.com) - *Building the future, on
 ## Quick Start
 
 ### Prerequisites
-- Windows 10/11 or WSL
-- [ShareX](https://getsharex.com/) installed and configured
+- Windows 10/11 (with optional WSL support)
+- [ShareX](https://getsharex.com/) installed on Windows
 - [Claude Code](https://claude.ai/download) installed
 - Node.js 18+ (for installation)
 
@@ -46,24 +46,27 @@ npm install -g @buildappolis/sharex-mcp-server
 claude mcp add sharex -- npx -y @buildappolis/sharex-mcp-server
 ```
 
-#### Option 2: Quick Install Scripts
+#### Option 2: Quick Install Script
 
-**Windows (PowerShell)**
+**Windows (PowerShell) - Also configures WSL automatically**
 ```powershell
-# One-line installer
+# One-line installer that handles both Windows and WSL
 iwr -useb https://raw.githubusercontent.com/buildappolis/sharex-mcp-server/main/setup.ps1 | iex
 ```
 
-**WSL/Linux**
-```bash
-# One-line installer
-curl -fsSL https://raw.githubusercontent.com/buildappolis/sharex-mcp-server/main/install.sh | bash
-```
+The installer will:
+1. Install the MCP server on Windows
+2. Register it with Claude Code on Windows
+3. Automatically detect and configure any WSL distributions
+4. Set up everything for immediate use
 
-The installers will automatically:
-1. Install the MCP server
-2. Register it with Claude Code
-3. Configure everything for immediate use
+**For WSL Users:**
+The Windows installer automatically configures WSL to connect to the Windows-installed server. If you need to manually configure WSL after installation:
+
+```bash
+# In WSL, register the Windows server
+claude mcp add sharex --scope user -- node /mnt/c/Users/YOUR_USERNAME/sharex-mcp-server/dist/index.js
+```
 
 ### Verify Installation
 ```bash

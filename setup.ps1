@@ -3,8 +3,71 @@
 
 $ErrorActionPreference = "Continue"
 
-Write-Host "ShareX MCP Server Installer" -ForegroundColor Blue
-Write-Host ""
+Write-Host "ShareX MCP Server Installer for Windows" -ForegroundColor Blue
+Write-Host ""  
+
+# Function to check and configure WSL
+function Configure-WSL {
+    param($ServerPath)
+    
+    Write-Host ""
+    Write-Host "Checking for WSL installations..." -ForegroundColor Cyan
+    
+    # Get list of WSL distributions
+    $wslDistros = @()
+    try {
+        $wslOutput = wsl --list --quiet 2>$null
+        if ($wslOutput) {
+            $wslDistros = $wslOutput | Where-Object { $_ -ne "" } | ForEach-Object { $_.Trim() -replace '\0', '' }
+        }
+    } catch {
+        # WSL not installed or not available
+    }
+    
+    if ($wslDistros.Count -eq 0) {
+        Write-Host "No WSL distributions found" -ForegroundColor Gray
+        return
+    }
+    
+    Write-Host "Found WSL distributions: $($wslDistros -join ', ')" -ForegroundColor Green
+    
+    foreach ($distro in $wslDistros) {
+        Write-Host ""
+        Write-Host "Configuring $distro..." -ForegroundColor Yellow
+        
+        # Convert Windows path to WSL path
+        $wslServerPath = $ServerPath -replace '\\', '/' -replace '^([A-Z]):', '/mnt/$1'.ToLower()
+        
+        # Check if Claude is installed in this WSL distro
+        $claudeCheck = wsl -d $distro -- which claude 2>$null
+        
+        if ($claudeCheck) {
+            Write-Host "  Claude Code found in $distro" -ForegroundColor Green
+            
+            # Register the MCP server in WSL
+            Write-Host "  Registering ShareX MCP server..." -ForegroundColor Yellow
+            
+            # Remove existing registration
+            wsl -d $distro -- claude mcp remove sharex 2>$null
+            
+            # Add new registration using the Windows installation
+            $registerCmd = "claude mcp add sharex --scope user -- node '$wslServerPath'"
+            wsl -d $distro -- bash -c $registerCmd 2>$null
+            
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "  ✓ Registered in $distro" -ForegroundColor Green
+            } else {
+                Write-Host "  ⚠ Could not auto-register in $distro" -ForegroundColor Yellow
+                Write-Host "  Register manually in WSL with:" -ForegroundColor Yellow
+                Write-Host "    claude mcp add sharex --scope user -- node '$wslServerPath'" -ForegroundColor White
+            }
+        } else {
+            Write-Host "  Claude Code not found in $distro" -ForegroundColor Gray
+            Write-Host "  After installing Claude in WSL, run:" -ForegroundColor Yellow  
+            Write-Host "    claude mcp add sharex --scope user -- node '$wslServerPath'" -ForegroundColor White
+        }
+    }
+}
 
 # Check if Node.js is installed
 if (!(Get-Command node -ErrorAction SilentlyContinue)) {
@@ -80,15 +143,19 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
     Write-Host "  claude mcp add sharex --scope user -- cmd /c node `"$serverPath`"" -ForegroundColor White
 }
 
+# Configure WSL if present
+Configure-WSL -ServerPath $serverPath
+
 Write-Host ""
 Write-Host "Installation complete!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Cyan
-Write-Host "1. Restart Claude Code to load the MCP server"
+Write-Host "1. Restart Claude Code (both Windows and WSL if applicable)"
 Write-Host "2. Take a screenshot with ShareX"
 Write-Host "3. Tell Claude: 'look at my latest screenshot'"
 Write-Host ""
 Write-Host "Server location: $serverPath" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "To verify the MCP server is working:" -ForegroundColor Yellow
-Write-Host "  claude mcp list" -ForegroundColor White
+Write-Host "  Windows: claude mcp list" -ForegroundColor White
+Write-Host "  WSL: wsl -- claude mcp list" -ForegroundColor White

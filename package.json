@@ -17,7 +17,8 @@
     "prepack": "pnpm build",
     "release:patch": "npm version patch && npm publish --access public",
     "release:minor": "npm version minor && npm publish --access public",
-    "release:major": "npm version major && npm publish --access public"
+    "release:major": "npm version major && npm publish --access public",
+    "package:windows": "pnpm build && pkg . --targets node20-win-x64 --output dist/sharex-mcp.exe"
   },
   "keywords": [
     "mcp",
@@ -63,7 +64,18 @@
     "@types/node": "^24.2.1",
     "@types/prompts": "^2.4.9",
     "tsx": "^4.20.4",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "pkg": "^5.8.1"
+  },
+  "pkg": {
+    "scripts": "dist/**/*.js",
+    "assets": [
+      "dist/**/*"
+    ],
+    "targets": [
+      "node20-win-x64"
+    ],
+    "outputPath": "dist"
   },
   "dependencies": {
     "chalk": "^5.5.0",

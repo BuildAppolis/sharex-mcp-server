@@ -36,13 +36,13 @@ if (Test-Path $installDir) {
     
     # Try git clone first
     $gitSuccess = $false
-    try {
-        $null = git clone https://github.com/hellocory/sharex-mcp-server.git $installDir 2>&1
+    if (Get-Command git -ErrorAction SilentlyContinue) {
+        Start-Process -FilePath "git" -ArgumentList "clone", "https://github.com/hellocory/sharex-mcp-server.git", $installDir -NoNewWindow -Wait -RedirectStandardOutput "$env:TEMP\git-out.txt" -RedirectStandardError "$env:TEMP\git-err.txt"
         if (Test-Path "$installDir\.git") {
             $gitSuccess = $true
         }
-    } catch {
-        # Git clone failed, will use fallback
+        Remove-Item "$env:TEMP\git-out.txt" -ErrorAction SilentlyContinue
+        Remove-Item "$env:TEMP\git-err.txt" -ErrorAction SilentlyContinue
     }
     
     if (-not $gitSuccess) {

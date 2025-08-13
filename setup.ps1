@@ -34,26 +34,12 @@ if (Test-Path $installDir) {
 } else {
     Write-Host "Downloading ShareX MCP Server..." -ForegroundColor Yellow
     
-    # Try git clone first
-    $gitSuccess = $false
-    if (Get-Command git -ErrorAction SilentlyContinue) {
-        Start-Process -FilePath "git" -ArgumentList "clone", "https://github.com/hellocory/sharex-mcp-server.git", $installDir -NoNewWindow -Wait -RedirectStandardOutput "$env:TEMP\git-out.txt" -RedirectStandardError "$env:TEMP\git-err.txt"
-        if (Test-Path "$installDir\.git") {
-            $gitSuccess = $true
-        }
-        Remove-Item "$env:TEMP\git-out.txt" -ErrorAction SilentlyContinue
-        Remove-Item "$env:TEMP\git-err.txt" -ErrorAction SilentlyContinue
-    }
-    
-    if (-not $gitSuccess) {
-        # Fallback to downloading as zip
-        Write-Host "Git not available, downloading as ZIP..." -ForegroundColor Yellow
-        $tempZip = "$env:TEMP\sharex-mcp-server.zip"
-        Invoke-WebRequest -Uri "https://github.com/hellocory/sharex-mcp-server/archive/refs/heads/main.zip" -OutFile $tempZip
-        Expand-Archive -Path $tempZip -DestinationPath $env:USERPROFILE -Force
-        Rename-Item "$env:USERPROFILE\sharex-mcp-server-main" $installDir -Force
-        Remove-Item $tempZip
-    }
+    # Download as ZIP to ensure we get the latest version
+    $tempZip = "$env:TEMP\sharex-mcp-server.zip"
+    Invoke-WebRequest -Uri "https://github.com/hellocory/sharex-mcp-server/archive/refs/heads/main.zip" -OutFile $tempZip
+    Expand-Archive -Path $tempZip -DestinationPath $env:USERPROFILE -Force
+    Rename-Item "$env:USERPROFILE\sharex-mcp-server-main" $installDir -Force
+    Remove-Item $tempZip
     
     Set-Location $installDir
 }

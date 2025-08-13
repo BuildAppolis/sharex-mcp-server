@@ -1,0 +1,54 @@
+# Source files
+src/
+*.ts
+!dist/**/*.d.ts
+
+# Config files
+tsconfig.json
+.gitignore
+.git/
+.claude/
+
+# Development files
+node_modules/
+*.log
+npm-debug.log*
+.env
+.env.local
+
+# Test files
+test/
+test-install/
+*.test.js
+*.spec.js
+
+# Screenshots (don't publish user screenshots!)
+screenshots/
+*.png
+*.jpg
+*.gif
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts not needed
+*.map
+
+# Temp files
+temp/
+tmp/
+null
+
+# Keep these
+!README.md
+!LICENSE
+!CONTRIBUTING.md
+!package.json
+!dist/

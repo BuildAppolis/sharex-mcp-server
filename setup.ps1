@@ -72,11 +72,13 @@ if (Test-Path $mcpConfigPath) {
 
 # Create the MCP configuration
 $mcpConfig = @{
-    mcpServers = @{
-        sharex = @{
-            command = "node"
-            args = @($serverPath.Replace('\', '\\'))
-            env = @{}
+    mcp = @{
+        mcpServers = @{
+            sharex = @{
+                command = "node"
+                args = @($serverPath.Replace('\', '\\'))
+                env = @{}
+            }
         }
     }
 } | ConvertTo-Json -Depth 10

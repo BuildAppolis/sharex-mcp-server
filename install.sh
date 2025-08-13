@@ -136,18 +136,20 @@ if [ -f "$MCP_CONFIG_PATH" ]; then
         # If jq is available, merge properly
         jq --arg cmd "node" \
            --arg path "${INSTALL_DIR}/dist/index.js" \
-           '.mcpServers.sharex = {"command": $cmd, "args": [$path], "env": {}}' \
+           '.mcp.mcpServers.sharex = {"command": $cmd, "args": [$path], "env": {}}' \
            "$MCP_CONFIG_PATH.backup" > "$MCP_CONFIG_PATH"
     else
         # Manual merge - just overwrite with MCP server config preserved
         echo "Note: jq not found, creating new settings with MCP server config"
         cat > "$MCP_CONFIG_PATH" << EOF
 {
-  "mcpServers": {
-    "sharex": {
-      "command": "node",
-      "args": ["${INSTALL_DIR}/dist/index.js"],
-      "env": {}
+  "mcp": {
+    "mcpServers": {
+      "sharex": {
+        "command": "node",
+        "args": ["${INSTALL_DIR}/dist/index.js"],
+        "env": {}
+      }
     }
   }
 }
@@ -157,11 +159,13 @@ else
     # Create new settings.json
     cat > "$MCP_CONFIG_PATH" << EOF
 {
-  "mcpServers": {
-    "sharex": {
-      "command": "node",
-      "args": ["${INSTALL_DIR}/dist/index.js"],
-      "env": {}
+  "mcp": {
+    "mcpServers": {
+      "sharex": {
+        "command": "node",
+        "args": ["${INSTALL_DIR}/dist/index.js"],
+        "env": {}
+      }
     }
   }
 }
@@ -187,11 +191,13 @@ fi
 # Create Windows version through WSL
 cat > "$WIN_MCP_CONFIG" << EOF
 {
-  "mcpServers": {
-    "sharex": {
-      "command": "node",
-      "args": ["${WIN_INSTALL_DIR}\\dist\\index.js"],
-      "env": {}
+  "mcp": {
+    "mcpServers": {
+      "sharex": {
+        "command": "node",
+        "args": ["${WIN_INSTALL_DIR}\\dist\\index.js"],
+        "env": {}
+      }
     }
   }
 }

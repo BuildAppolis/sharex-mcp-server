@@ -1,5 +1,8 @@
 # ShareX MCP Server
 
+[![npm version](https://img.shields.io/npm/v/@buildappolis/sharex-mcp-server.svg)](https://www.npmjs.com/package/@buildappolis/sharex-mcp-server)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 A Model Context Protocol (MCP) server that seamlessly integrates ShareX screenshots and GIFs with Claude Code, enabling AI-powered analysis of your visual content.
 
 Built by [BuildAppolis](https://www.buildappolis.com) - *Building the future, one app at a time.*
@@ -34,21 +37,32 @@ Built by [BuildAppolis](https://www.buildappolis.com) - *Building the future, on
 
 ### Installation
 
-#### Windows (PowerShell)
+#### Option 1: Install from NPM (Recommended)
+```bash
+# Install globally
+npm install -g @buildappolis/sharex-mcp-server
+
+# Register with Claude Code
+claude mcp add sharex -- npx -y @buildappolis/sharex-mcp-server
+```
+
+#### Option 2: Quick Install Scripts
+
+**Windows (PowerShell)**
 ```powershell
 # One-line installer
 iwr -useb https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/setup.ps1 | iex
 ```
 
-#### WSL/Linux
+**WSL/Linux**
 ```bash
 # One-line installer
 curl -fsSL https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/install.sh | bash
 ```
 
-The installer will:
-1. Download and install the MCP server
-2. Register it with Claude Code automatically
+The installers will automatically:
+1. Install the MCP server
+2. Register it with Claude Code
 3. Configure everything for immediate use
 
 ### Verify Installation
@@ -119,6 +133,15 @@ The MCP server uses ShareX's default screenshot location automatically. If you'v
 ## Troubleshooting
 
 ### Server Not Connected
+
+If using NPM package:
+```bash
+# Re-register the server
+claude mcp remove sharex
+claude mcp add sharex -- npx -y @buildappolis/sharex-mcp-server
+```
+
+If using local installation:
 ```bash
 # Re-register the server
 claude mcp remove sharex
@@ -137,13 +160,24 @@ claude mcp add sharex --scope user -- cmd /c node "C:\Users\%USERNAME%\sharex-mc
 
 ## Uninstall
 
-### Windows
+### NPM Package
+```bash
+# Remove from Claude Code
+claude mcp remove sharex
+
+# Uninstall package
+npm uninstall -g @buildappolis/sharex-mcp-server
+```
+
+### Local Installation
+
+**Windows**
 ```powershell
 claude mcp remove sharex
 Remove-Item -Recurse -Force "$env:USERPROFILE\sharex-mcp-server"
 ```
 
-### WSL
+**WSL**
 ```bash
 claude mcp remove sharex
 rm -rf ~/sharex-mcp-server

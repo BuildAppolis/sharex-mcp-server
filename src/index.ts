@@ -6,6 +6,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import * as fs from "fs/promises";
 import * as path from "path";
+import * as os from "os";
 import { fileURLToPath } from "url";
 import mime from "mime-types";
 import chokidar, { FSWatcher } from "chokidar";
@@ -24,16 +25,26 @@ interface ScreenshotMetadata {
   type: string;
 }
 
+interface ExtractedFrames {
+  gifName: string;
+  frames: string[]; // Base64 encoded frames
+  totalFrames: number;
+  extractedAt: Date;
+}
+
 class ShareXMCPServer {
   private server: Server;
   private imageCache: Map<string, ScreenshotMetadata> = new Map();
   private gifCache: Map<string, ScreenshotMetadata> = new Map();
+  private extractedFramesCache: Map<string, ExtractedFrames> = new Map();
   private watcher: FSWatcher | null = null;
   private config: ServerConfig;
   private screenshotsDir: string | null = null;
+  private tempDir: string;
 
   constructor(config: Partial<ServerConfig> = {}) {
     this.config = { ...defaultConfig, ...config };
+    this.tempDir = this.config.tempFramesPath || path.join(os.tmpdir(), 'sharex-mcp-frames');
     
     this.server = new Server(
       {
@@ -49,6 +60,15 @@ class ShareXMCPServer {
 
     this.setupHandlers();
     this.initializeWatcher();
+    this.ensureTempDir();
+  }
+
+  private async ensureTempDir() {
+    try {
+      await fs.mkdir(this.tempDir, { recursive: true });
+    } catch (error) {
+      console.error("Failed to create temp directory:", error);
+    }
   }
 
   private async initializeWatcher() {
@@ -105,6 +125,8 @@ class ShareXMCPServer {
       if (type === "image/gif") {
         this.gifCache.set(name, metadata);
         this.enforceGifLimit();
+        // Clear extracted frames for this GIF if it was updated
+        this.extractedFramesCache.delete(name);
       } else if (type.startsWith("image/")) {
         this.imageCache.set(name, metadata);
         this.enforceImageLimit();
@@ -118,6 +140,7 @@ class ShareXMCPServer {
     const name = path.basename(filePath);
     this.imageCache.delete(name);
     this.gifCache.delete(name);
+    this.extractedFramesCache.delete(name);
   }
   
   private enforceImageLimit() {
@@ -143,48 +166,19 @@ class ShareXMCPServer {
     const toRemove = sorted.slice(0, this.gifCache.size - this.config.maxGifs);
     for (const [name] of toRemove) {
       this.gifCache.delete(name);
+      this.extractedFramesCache.delete(name);
     }
   }
 
   private async scanDirectory() {
+    if (!this.screenshotsDir) return;
+    
     try {
-      if (!this.screenshotsDir) return;
-      
       const files = await fs.readdir(this.screenshotsDir);
-      
-      // Process all files and collect metadata
-      const allFiles: ScreenshotMetadata[] = [];
       
       for (const file of files) {
         const filePath = path.join(this.screenshotsDir, file);
-        try {
-          const stats = await fs.stat(filePath);
-          const type = mime.lookup(filePath) || "unknown";
-          
-          if (type.startsWith("image/")) {
-            allFiles.push({
-              name: file,
-              path: filePath,
-              size: stats.size,
-              mtime: stats.mtime,
-              type
-            });
-          }
-        } catch (error) {
-          // Skip files we can't read
-        }
-      }
-      
-      // Sort by modification time (newest first)
-      allFiles.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
-      
-      // Add to caches respecting limits
-      for (const file of allFiles) {
-        if (file.type === "image/gif" && this.gifCache.size < this.config.maxGifs) {
-          this.gifCache.set(file.name, file);
-        } else if (file.type !== "image/gif" && this.imageCache.size < this.config.maxImages) {
-          this.imageCache.set(file.name, file);
-        }
+        await this.handleFileAdd(filePath);
       }
     } catch (error) {
       console.error("Failed to scan directory:", error);
@@ -196,7 +190,7 @@ class ShareXMCPServer {
       tools: [
         {
           name: "check_latest_screenshots",
-          description: "Get the most recent screenshots (up to 5)",
+          description: "Get the most recent screenshot(s)",
           inputSchema: {
             type: "object",
             properties: {
@@ -212,7 +206,31 @@ class ShareXMCPServer {
         },
         {
           name: "check_latest_gif",
-          description: "Get the most recent GIF file",
+          description: "Get the most recent GIF (automatically extracts frames if needed)",
+          inputSchema: {
+            type: "object",
+            properties: {}
+          }
+        },
+        {
+          name: "check_gif_by_index",
+          description: "Get a specific GIF by its index (1-5, where 1 is the most recent)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              index: {
+                type: "number",
+                description: "Index of the GIF (1=newest, 2=second newest, etc.)",
+                minimum: 1,
+                maximum: 5
+              }
+            },
+            required: ["index"]
+          }
+        },
+        {
+          name: "list_gifs",
+          description: "List available GIFs with their index numbers",
           inputSchema: {
             type: "object",
             properties: {}
@@ -245,32 +263,6 @@ class ShareXMCPServer {
               }
             }
           }
-        },
-        {
-          name: "extract_gif_frames",
-          description: "Extract frames from a GIF file. Use this when a GIF is too large or when you need to analyze individual frames.",
-          inputSchema: {
-            type: "object",
-            properties: {
-              filename: {
-                type: "string",
-                description: "The filename of the GIF to extract frames from (optional, uses latest if not specified)"
-              },
-              maxFrames: {
-                type: "number",
-                description: "Maximum number of frames to extract (default: 10)",
-                default: 10,
-                minimum: 1,
-                maximum: 30
-              },
-              frameInterval: {
-                type: "number",
-                description: "Extract every Nth frame (default: 1 for every frame)",
-                default: 1,
-                minimum: 1
-              }
-            }
-          }
         }
       ]
     }));
@@ -283,20 +275,19 @@ class ShareXMCPServer {
           return await this.getLatestScreenshots((args as any)?.count || 1);
         
         case "check_latest_gif":
-          return await this.getLatestGif();
+          return await this.getGifWithFrames();
+        
+        case "check_gif_by_index":
+          return await this.getGifWithFrames((args as any)?.index);
+        
+        case "list_gifs":
+          return await this.listGifs();
         
         case "get_screenshot_by_name":
           return await this.getScreenshotByName((args as any)?.filename || "");
         
         case "list_screenshots":
           return await this.listScreenshots((args as any)?.limit || 20);
-        
-        case "extract_gif_frames":
-          return await this.extractGifFrames(
-            (args as any)?.filename,
-            (args as any)?.maxFrames || 10,
-            (args as any)?.frameInterval || 1
-          );
         
         default:
           throw new Error(`Unknown tool: ${name}`);
@@ -338,7 +329,7 @@ class ShareXMCPServer {
       } catch (error) {
         content.push({
           type: "text",
-          text: `Failed to read ${file.name}: ${error}`
+          text: `Failed to read screenshot ${file.name}: ${error}`
         });
       }
     }
@@ -346,7 +337,33 @@ class ShareXMCPServer {
     return { content };
   }
 
-  private async getLatestGif() {
+  private async listGifs() {
+    const gifFiles = Array.from(this.gifCache.values())
+      .sort((a, b) => b.mtime.getTime() - a.mtime.getTime())
+      .slice(0, 5);
+
+    if (gifFiles.length === 0) {
+      return {
+        content: [{
+          type: "text",
+          text: "No GIF files found. Record a GIF with ShareX and try again."
+        }]
+      };
+    }
+
+    const gifList = gifFiles.map((file, index) => 
+      `${index + 1}. ${file.name} - ${(file.size / 1024).toFixed(2)} KB - ${new Date(file.mtime).toLocaleString()}`
+    ).join("\n");
+
+    return {
+      content: [{
+        type: "text",
+        text: `Available GIFs (use check_gif_by_index with the number):\n${gifList}\n\nUse index 1 for the latest GIF, or specify 2-${gifFiles.length} for older ones.`
+      }]
+    };
+  }
+
+  private async getGifWithFrames(index?: number) {
     const gifFiles = Array.from(this.gifCache.values())
       .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
 
@@ -359,46 +376,134 @@ class ShareXMCPServer {
       };
     }
 
-    const latestGif = gifFiles[0];
+    const gifIndex = (index || 1) - 1;
+    if (gifIndex < 0 || gifIndex >= gifFiles.length) {
+      return {
+        content: [{
+          type: "text",
+          text: `Invalid GIF index. Please use 1-${gifFiles.length}. Use list_gifs to see available GIFs.`
+        }]
+      };
+    }
+
+    const targetGif = gifFiles[gifIndex];
     
+    // Check if we already have extracted frames cached
+    if (this.extractedFramesCache.has(targetGif.name)) {
+      const cached = this.extractedFramesCache.get(targetGif.name)!;
+      return this.formatExtractedFrames(cached, targetGif);
+    }
+
+    // Extract frames
     try {
-      // Check file size first
-      const stats = await fs.stat(latestGif.path);
-      const maxSize = 10 * 1024 * 1024; // 10MB limit for GIFs
-      
-      if (stats.size > maxSize) {
+      const content = [{
+        type: "text",
+        text: `Processing GIF: ${targetGif.name} (${(targetGif.size / 1024).toFixed(2)} KB)\nExtracting frames...`
+      }];
+
+      // Check if GIF is too large
+      const maxSize = 50 * 1024 * 1024; // 50MB absolute max
+      if (targetGif.size > maxSize) {
         return {
           content: [{
             type: "text",
-            text: `Latest GIF: ${latestGif.name} (${new Date(latestGif.mtime).toLocaleString()})\nFile size: ${(stats.size / 1024 / 1024).toFixed(2)}MB\n\nNote: GIF is too large to display directly (>10MB).\n\nUse the 'extract_gif_frames' tool to break down this GIF into individual frames for viewing.\n\nFile location: ${latestGif.path}`
+            text: `GIF file ${targetGif.name} is too large (${(targetGif.size / 1024 / 1024).toFixed(2)} MB). Maximum supported size is 50MB.`
           }]
         };
       }
+
+      // Load and extract frames
+      const gif = sharp(targetGif.path, { animated: true });
+      const metadata = await gif.metadata();
       
-      const gifData = await fs.readFile(latestGif.path);
-      const base64 = gifData.toString("base64");
+      if (!metadata.pages || metadata.pages <= 1) {
+        // Static image or single frame, just return it
+        const gifData = await fs.readFile(targetGif.path);
+        const base64 = gifData.toString("base64");
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `GIF: ${targetGif.name} (static/single frame)`
+            },
+            {
+              type: "image",
+              data: base64,
+              mimeType: "image/gif"
+            }
+          ]
+        };
+      }
+
+      const totalFrames = metadata.pages;
+      const framesToExtract = Math.min(totalFrames, this.config.maxFramesPerGif);
+      const frameInterval = Math.max(1, Math.floor(totalFrames / framesToExtract));
       
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Latest GIF: ${latestGif.name} (${new Date(latestGif.mtime).toLocaleString()}) - ${(stats.size / 1024).toFixed(2)}KB`
-          },
-          {
-            type: "image",
-            data: base64,
-            mimeType: "image/gif"
-          }
-        ]
+      const frames: string[] = [];
+      
+      for (let i = 0; i < framesToExtract; i++) {
+        const frameIndex = Math.min(i * frameInterval, totalFrames - 1);
+        
+        try {
+          const frameBuffer = await sharp(targetGif.path, { 
+            animated: true,
+            page: frameIndex 
+          })
+            .png()
+            .toBuffer();
+          
+          frames.push(frameBuffer.toString("base64"));
+        } catch (frameError) {
+          console.error(`Failed to extract frame ${frameIndex}:`, frameError);
+        }
+      }
+
+      // Cache the extracted frames
+      const extracted: ExtractedFrames = {
+        gifName: targetGif.name,
+        frames,
+        totalFrames,
+        extractedAt: new Date()
       };
+      
+      this.extractedFramesCache.set(targetGif.name, extracted);
+      
+      return this.formatExtractedFrames(extracted, targetGif);
     } catch (error) {
       return {
         content: [{
           type: "text",
-          text: `Failed to read GIF: ${error}`
+          text: `Failed to process GIF: ${error}\n\nThe GIF file might be corrupted or in an unsupported format.`
         }]
       };
     }
+  }
+
+  private formatExtractedFrames(extracted: ExtractedFrames, gif: ScreenshotMetadata) {
+    const content: any[] = [{
+      type: "text",
+      text: `GIF: ${gif.name}\n` +
+            `Size: ${(gif.size / 1024).toFixed(2)} KB\n` +
+            `Total frames: ${extracted.totalFrames}\n` +
+            `Showing: ${extracted.frames.length} frames${extracted.frames.length < extracted.totalFrames ? ` (every ${Math.floor(extracted.totalFrames / extracted.frames.length)} frames)` : ''}`
+    }];
+
+    // Add each frame
+    extracted.frames.forEach((frame, index) => {
+      const actualFrameNumber = Math.floor(index * (extracted.totalFrames / extracted.frames.length)) + 1;
+      content.push({
+        type: "text",
+        text: `Frame ${actualFrameNumber}/${extracted.totalFrames}:`
+      });
+      content.push({
+        type: "image",
+        data: frame,
+        mimeType: "image/png"
+      });
+    });
+
+    return { content };
   }
 
   private async getScreenshotByName(filename: string) {
@@ -413,21 +518,15 @@ class ShareXMCPServer {
       };
     }
 
+    // If it's a GIF, use the frame extraction logic
+    if (file.type === "image/gif") {
+      const gifFiles = Array.from(this.gifCache.values())
+        .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+      const index = gifFiles.findIndex(g => g.name === filename) + 1;
+      return await this.getGifWithFrames(index);
+    }
+
     try {
-      // Check file size first
-      const stats = await fs.stat(file.path);
-      const maxSize = file.type === "image/gif" ? 10 * 1024 * 1024 : 50 * 1024 * 1024; // 10MB for GIFs, 50MB for images
-      
-      if (stats.size > maxSize) {
-        const sizeLimit = file.type === "image/gif" ? "10MB" : "50MB";
-        return {
-          content: [{
-            type: "text",
-            text: `File: ${file.name} (${new Date(file.mtime).toLocaleString()})\nFile size: ${(stats.size / 1024 / 1024).toFixed(2)}MB\n\nNote: File is too large to display directly (>${sizeLimit}). File location: ${file.path}`
-          }]
-        };
-      }
-      
       const imageData = await fs.readFile(file.path);
       const base64 = imageData.toString("base64");
       
@@ -435,7 +534,7 @@ class ShareXMCPServer {
         content: [
           {
             type: "text",
-            text: `${file.type === "image/gif" ? "GIF" : "Screenshot"}: ${file.name} (${new Date(file.mtime).toLocaleString()}) - ${(stats.size / 1024).toFixed(2)}KB`
+            text: `Screenshot: ${file.name} (${new Date(file.mtime).toLocaleString()})`
           },
           {
             type: "image",
@@ -485,107 +584,6 @@ class ShareXMCPServer {
     };
   }
 
-  private async extractGifFrames(filename?: string, maxFrames: number = 10, frameInterval: number = 1) {
-    let targetGif: ScreenshotMetadata | undefined;
-    
-    // Get the GIF file to process
-    if (filename) {
-      targetGif = this.gifCache.get(filename);
-      if (!targetGif) {
-        return {
-          content: [{
-            type: "text",
-            text: `GIF file "${filename}" not found. Use list_screenshots to see available GIF files.`
-          }]
-        };
-      }
-    } else {
-      // Get the latest GIF
-      const gifFiles = Array.from(this.gifCache.values())
-        .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
-      
-      if (gifFiles.length === 0) {
-        return {
-          content: [{
-            type: "text",
-            text: "No GIF files found. Record a GIF with ShareX and try again."
-          }]
-        };
-      }
-      
-      targetGif = gifFiles[0];
-    }
-    
-    try {
-      // Notify user that extraction is starting
-      const startMessage = `Extracting frames from GIF: ${targetGif.name}\nFile size: ${(targetGif.size / 1024).toFixed(2)} KB\nProcessing...`;
-      
-      // Load the GIF with sharp
-      const gif = sharp(targetGif.path, { animated: true });
-      const metadata = await gif.metadata();
-      
-      if (!metadata.pages) {
-        return {
-          content: [{
-            type: "text",
-            text: `GIF file ${targetGif.name} appears to be a static image (no animation frames found).`
-          }]
-        };
-      }
-      
-      const totalFrames = metadata.pages;
-      const framesToExtract = Math.min(Math.ceil(totalFrames / frameInterval), maxFrames);
-      
-      const content: any[] = [{
-        type: "text",
-        text: `${startMessage}\n\nGIF Details:\n- Total frames: ${totalFrames}\n- Extracting: ${framesToExtract} frames (every ${frameInterval === 1 ? '' : frameInterval + 'th '}frame)\n- Dimensions: ${metadata.width}x${metadata.height}\n\nExtracted frames:`
-      }];
-      
-      // Extract frames
-      for (let i = 0; i < framesToExtract; i++) {
-        const frameIndex = i * frameInterval;
-        if (frameIndex >= totalFrames) break;
-        
-        try {
-          // Extract specific frame
-          const frameBuffer = await sharp(targetGif.path, { 
-            animated: true,
-            page: frameIndex 
-          })
-            .png()
-            .toBuffer();
-          
-          const base64 = frameBuffer.toString("base64");
-          
-          content.push({
-            type: "text",
-            text: `Frame ${frameIndex + 1}/${totalFrames}:`
-          });
-          
-          content.push({
-            type: "image",
-            data: base64,
-            mimeType: "image/png"
-          });
-        } catch (frameError) {
-          content.push({
-            type: "text",
-            text: `Failed to extract frame ${frameIndex + 1}: ${frameError}`
-          });
-        }
-      }
-      
-      return { content };
-    } catch (error) {
-      return {
-        content: [{
-          type: "text",
-          text: `Failed to extract frames from GIF: ${error}\n\nNote: The GIF file might be corrupted or in an unsupported format.`
-        }]
-      };
-    }
-  }
-
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
@@ -593,13 +591,5 @@ class ShareXMCPServer {
   }
 }
 
-// Load config from environment or use defaults
-const config: Partial<ServerConfig> = {
-  maxImages: parseInt(process.env.SHAREX_MAX_IMAGES || "10"),
-  maxGifs: parseInt(process.env.SHAREX_MAX_GIFS || "5"),
-  shareXPath: process.env.SHAREX_PATH,
-  autoDetectShareX: process.env.SHAREX_AUTO_DETECT !== "false"
-};
-
-const server = new ShareXMCPServer(config);
+const server = new ShareXMCPServer();
 server.run().catch(console.error);

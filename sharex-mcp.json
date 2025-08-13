@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "sharex": {
+      "command": "node",
+      "args": ["D:/Coding/BuildAppolis/sharex-mcp-server/dist/index.js"],
+      "env": {}
+    }
+  }
+}

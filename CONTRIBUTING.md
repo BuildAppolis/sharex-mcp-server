@@ -49,7 +49,7 @@ If you want to run your own modified version:
 
 ```bash
 # Clone the repository
-git clone https://github.com/hellocory/sharex-mcp-server.git
+git clone https://github.com/buildappolis/sharex-mcp-server.git
 cd sharex-mcp-server
 
 # Install dependencies
@@ -260,7 +260,7 @@ Looking for something to work on? Here are some ideas:
 ## Getting Help
 
 - **Discord**: [BuildAppolis Community](https://www.buildappolis.com)
-- **Issues**: [GitHub Issues](https://github.com/hellocory/sharex-mcp-server/issues)
+- **Issues**: [GitHub Issues](https://github.com/buildappolis/sharex-mcp-server/issues)
 - **Email**: support@buildappolis.com
 
 ## License

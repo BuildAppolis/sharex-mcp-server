@@ -99,7 +99,7 @@ else
     cd "$(dirname "$INSTALL_DIR")"
     
     # Download and extract
-    curl -L -o /tmp/sharex-mcp-server.zip https://github.com/hellocory/sharex-mcp-server/archive/refs/heads/main.zip
+    curl -L -o /tmp/sharex-mcp-server.zip https://github.com/buildappolis/sharex-mcp-server/archive/refs/heads/main.zip
     unzip -q /tmp/sharex-mcp-server.zip
     mv sharex-mcp-server-main "$INSTALL_DIR"
     rm /tmp/sharex-mcp-server.zip

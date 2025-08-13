@@ -86,7 +86,7 @@ git push origin v1.0.0
 ```
 
 ### Create GitHub Release
-1. Go to https://github.com/hellocory/sharex-mcp-server/releases
+1. Go to https://github.com/buildappolis/sharex-mcp-server/releases
 2. Click "Create a new release"
 3. Choose the tag you just created
 4. Add release notes

@@ -45,11 +45,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hellocory/sharex-mcp-server.git"
+    "url": "https://github.com/buildappolis/sharex-mcp-server.git"
   },
-  "homepage": "https://github.com/hellocory/sharex-mcp-server#readme",
+  "homepage": "https://github.com/buildappolis/sharex-mcp-server#readme",
   "bugs": {
-    "url": "https://github.com/hellocory/sharex-mcp-server/issues"
+    "url": "https://github.com/buildappolis/sharex-mcp-server/issues"
   },
   "files": [
     "dist",

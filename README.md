@@ -51,13 +51,13 @@ claude mcp add sharex -- npx -y @buildappolis/sharex-mcp-server
 **Windows (PowerShell)**
 ```powershell
 # One-line installer
-iwr -useb https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/setup.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/buildappolis/sharex-mcp-server/main/setup.ps1 | iex
 ```
 
 **WSL/Linux**
 ```bash
 # One-line installer
-curl -fsSL https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/buildappolis/sharex-mcp-server/main/install.sh | bash
 ```
 
 The installers will automatically:
@@ -189,8 +189,8 @@ Want to help improve ShareX MCP Server? Check out our [Contributing Guide](CONTR
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/hellocory/sharex-mcp-server/issues)
-- **Updates**: [GitHub Releases](https://github.com/hellocory/sharex-mcp-server/releases)
+- **Issues**: [GitHub Issues](https://github.com/buildappolis/sharex-mcp-server/issues)
+- **Updates**: [GitHub Releases](https://github.com/buildappolis/sharex-mcp-server/releases)
 - **Developer**: [BuildAppolis](https://www.buildappolis.com)
 
 ## License

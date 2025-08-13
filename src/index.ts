@@ -8,7 +8,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import mime from "mime-types";
-import chokidar from "chokidar";
+import chokidar, { FSWatcher } from "chokidar";
 import { ServerConfig, defaultConfig } from "./config.js";
 import { getShareXScreenshotPath } from "./utils/sharex.js";
 
@@ -27,7 +27,7 @@ class ShareXMCPServer {
   private server: Server;
   private imageCache: Map<string, ScreenshotMetadata> = new Map();
   private gifCache: Map<string, ScreenshotMetadata> = new Map();
-  private watcher: chokidar.FSWatcher | null = null;
+  private watcher: FSWatcher | null = null;
   private config: ServerConfig;
   private screenshotsDir: string | null = null;
 
@@ -253,16 +253,16 @@ class ShareXMCPServer {
 
       switch (name) {
         case "check_latest_screenshots":
-          return await this.getLatestScreenshots(args.count || 1);
+          return await this.getLatestScreenshots((args as any)?.count || 1);
         
         case "check_latest_gif":
           return await this.getLatestGif();
         
         case "get_screenshot_by_name":
-          return await this.getScreenshotByName(args.filename);
+          return await this.getScreenshotByName((args as any)?.filename || "");
         
         case "list_screenshots":
-          return await this.listScreenshots(args.limit || 20);
+          return await this.listScreenshots((args as any)?.limit || 20);
         
         default:
           throw new Error(`Unknown tool: ${name}`);

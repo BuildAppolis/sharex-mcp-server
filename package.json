@@ -15,7 +15,15 @@
     "inspect": "tsx src/index.ts",
     "prepublishOnly": "pnpm build"
   },
-  "keywords": ["mcp", "sharex", "screenshots", "claude", "ai", "windows", "wsl"],
+  "keywords": [
+    "mcp",
+    "sharex",
+    "screenshots",
+    "claude",
+    "ai",
+    "windows",
+    "wsl"
+  ],
   "author": "hellocory",
   "license": "MIT",
   "repository": {
@@ -30,7 +38,9 @@
   "packageManager": "pnpm@10.11.0",
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.17.2",
+    "@types/mime-types": "^3.0.1",
     "@types/node": "^24.2.1",
+    "@types/prompts": "^2.4.9",
     "tsx": "^4.20.4",
     "typescript": "^5.9.2"
   },

@@ -1,6 +1,6 @@
 #!/bin/bash
 # ShareX MCP Server One-Line Installer for Unix/WSL
-# Run with: curl -sSL https://raw.githubusercontent.com/yourusername/sharex-mcp-server/main/setup.sh | bash
+# Run with: curl -sSL https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/setup.sh | bash
 
 set -e
 
@@ -30,10 +30,10 @@ if [ -d "$INSTALL_DIR" ]; then
     git pull 2>/dev/null || echo "Not a git repository, continuing..."
 else
     echo -e "\033[33mDownloading ShareX MCP Server...\033[0m"
-    git clone https://github.com/yourusername/sharex-mcp-server.git "$INSTALL_DIR" 2>/dev/null || {
+    git clone https://github.com/hellocory/sharex-mcp-server.git "$INSTALL_DIR" 2>/dev/null || {
         # Fallback to downloading as tar.gz
         temp_tar="/tmp/sharex-mcp-server.tar.gz"
-        curl -L "https://github.com/yourusername/sharex-mcp-server/archive/main.tar.gz" -o "$temp_tar"
+        curl -L "https://github.com/hellocory/sharex-mcp-server/archive/main.tar.gz" -o "$temp_tar"
         mkdir -p "$INSTALL_DIR"
         tar -xzf "$temp_tar" -C "$INSTALL_DIR" --strip-components=1
         rm "$temp_tar"

@@ -16,7 +16,7 @@
     "prepublishOnly": "pnpm build"
   },
   "keywords": ["mcp", "sharex", "screenshots", "claude", "ai", "windows", "wsl"],
-  "author": "",
+  "author": "hellocory",
   "license": "MIT",
   "repository": {
     "type": "git",

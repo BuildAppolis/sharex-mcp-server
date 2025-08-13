@@ -1,5 +1,5 @@
 # ShareX MCP Server One-Line Installer for Windows
-# Run with: iwr -useb https://raw.githubusercontent.com/yourusername/sharex-mcp-server/main/setup.ps1 | iex
+# Run with: iwr -useb https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/setup.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
@@ -29,12 +29,12 @@ if (Test-Path $installDir) {
     git pull 2>$null || Write-Host "Not a git repository, continuing..."
 } else {
     Write-Host "Downloading ShareX MCP Server..." -ForegroundColor Yellow
-    git clone https://github.com/yourusername/sharex-mcp-server.git $installDir 2>$null
+    git clone https://github.com/hellocory/sharex-mcp-server.git $installDir 2>$null
     
     if ($LASTEXITCODE -ne 0) {
         # Fallback to downloading as zip
         $tempZip = "$env:TEMP\sharex-mcp-server.zip"
-        Invoke-WebRequest -Uri "https://github.com/yourusername/sharex-mcp-server/archive/main.zip" -OutFile $tempZip
+        Invoke-WebRequest -Uri "https://github.com/hellocory/sharex-mcp-server/archive/main.zip" -OutFile $tempZip
         Expand-Archive -Path $tempZip -DestinationPath $env:USERPROFILE -Force
         Rename-Item "$env:USERPROFILE\sharex-mcp-server-main" $installDir
         Remove-Item $tempZip

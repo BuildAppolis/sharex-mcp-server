@@ -60,25 +60,23 @@ if (!(Test-Path $claudeDir)) {
     New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
 }
 
-# Create settings.json configuration for Windows
-$mcpConfigPath = "$claudeDir\settings.json"
+# Create .mcp.json configuration for Windows
+$mcpConfigPath = "$claudeDir\.mcp.json"
 $serverPath = "$installDir\dist\index.js"
 
-# Check if settings.json exists and back it up
+# Check if .mcp.json exists and back it up
 if (Test-Path $mcpConfigPath) {
-    Write-Host "Backing up existing settings.json to settings.json.backup" -ForegroundColor Yellow
+    Write-Host "Backing up existing .mcp.json to .mcp.json.backup" -ForegroundColor Yellow
     Copy-Item $mcpConfigPath "$mcpConfigPath.backup"
 }
 
 # Create the MCP configuration
 $mcpConfig = @{
-    mcp = @{
-        mcpServers = @{
-            sharex = @{
-                command = "node"
-                args = @($serverPath.Replace('\', '\\'))
-                env = @{}
-            }
+    mcpServers = @{
+        sharex = @{
+            command = "node"
+            args = @($serverPath.Replace('\', '\\'))
+            env = @{}
         }
     }
 } | ConvertTo-Json -Depth 10

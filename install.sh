@@ -123,12 +123,12 @@ echo "Configuring Claude Code for WSL..."
 CLAUDE_DIR="$HOME/.claude"
 mkdir -p "$CLAUDE_DIR"
 
-# Claude settings path in WSL
-MCP_CONFIG_PATH="$CLAUDE_DIR/settings.json"
+# Claude MCP config path in WSL
+MCP_CONFIG_PATH="$CLAUDE_DIR/.mcp.json"
 
-# Check if settings.json exists and back it up
+# Check if .mcp.json exists and back it up
 if [ -f "$MCP_CONFIG_PATH" ]; then
-    echo "Backing up existing settings.json to settings.json.backup"
+    echo "Backing up existing .mcp.json to .mcp.json.backup"
     cp "$MCP_CONFIG_PATH" "$MCP_CONFIG_PATH.backup"
     
     # Read existing settings and merge MCP configuration
@@ -136,36 +136,32 @@ if [ -f "$MCP_CONFIG_PATH" ]; then
         # If jq is available, merge properly
         jq --arg cmd "node" \
            --arg path "${INSTALL_DIR}/dist/index.js" \
-           '.mcp.mcpServers.sharex = {"command": $cmd, "args": [$path], "env": {}}' \
+           '.mcpServers.sharex = {"command": $cmd, "args": [$path], "env": {}}' \
            "$MCP_CONFIG_PATH.backup" > "$MCP_CONFIG_PATH"
     else
         # Manual merge - just overwrite with MCP server config preserved
-        echo "Note: jq not found, creating new settings with MCP server config"
+        echo "Note: jq not found, creating new MCP config"
         cat > "$MCP_CONFIG_PATH" << EOF
 {
-  "mcp": {
-    "mcpServers": {
-      "sharex": {
-        "command": "node",
-        "args": ["${INSTALL_DIR}/dist/index.js"],
-        "env": {}
-      }
+  "mcpServers": {
+    "sharex": {
+      "command": "node",
+      "args": ["${INSTALL_DIR}/dist/index.js"],
+      "env": {}
     }
   }
 }
 EOF
     fi
 else
-    # Create new settings.json
+    # Create new .mcp.json
     cat > "$MCP_CONFIG_PATH" << EOF
 {
-  "mcp": {
-    "mcpServers": {
-      "sharex": {
-        "command": "node",
-        "args": ["${INSTALL_DIR}/dist/index.js"],
-        "env": {}
-      }
+  "mcpServers": {
+    "sharex": {
+      "command": "node",
+      "args": ["${INSTALL_DIR}/dist/index.js"],
+      "env": {}
     }
   }
 }
@@ -177,27 +173,25 @@ echo "✓ Created MCP configuration at: $MCP_CONFIG_PATH"
 # Also create a Windows-compatible version if needed
 WIN_INSTALL_DIR=$(wsl_to_windows_path "$INSTALL_DIR")
 WIN_CLAUDE_DIR="${WSL_USER_PROFILE}/.claude"
-WIN_MCP_CONFIG="${WIN_CLAUDE_DIR}/settings.json"
+WIN_MCP_CONFIG="${WIN_CLAUDE_DIR}/.mcp.json"
 
 # Create Windows .claude directory through WSL
 mkdir -p "$WIN_CLAUDE_DIR"
 
-# Check if Windows settings.json exists and back it up
+# Check if Windows .mcp.json exists and back it up
 if [ -f "$WIN_MCP_CONFIG" ]; then
-    echo "Backing up existing Windows settings.json"
+    echo "Backing up existing Windows .mcp.json"
     cp "$WIN_MCP_CONFIG" "$WIN_MCP_CONFIG.backup"
 fi
 
 # Create Windows version through WSL
 cat > "$WIN_MCP_CONFIG" << EOF
 {
-  "mcp": {
-    "mcpServers": {
-      "sharex": {
-        "command": "node",
-        "args": ["${WIN_INSTALL_DIR}\\dist\\index.js"],
-        "env": {}
-      }
+  "mcpServers": {
+    "sharex": {
+      "command": "node",
+      "args": ["${WIN_INSTALL_DIR}\\dist\\index.js"],
+      "env": {}
     }
   }
 }

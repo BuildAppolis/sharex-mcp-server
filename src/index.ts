@@ -328,6 +328,19 @@ class ShareXMCPServer {
     const latestGif = gifFiles[0];
     
     try {
+      // Check file size first
+      const stats = await fs.stat(latestGif.path);
+      const maxSize = 10 * 1024 * 1024; // 10MB limit for GIFs
+      
+      if (stats.size > maxSize) {
+        return {
+          content: [{
+            type: "text",
+            text: `Latest GIF: ${latestGif.name} (${new Date(latestGif.mtime).toLocaleString()})\nFile size: ${(stats.size / 1024 / 1024).toFixed(2)}MB\n\nNote: GIF is too large to display directly (>10MB). File location: ${latestGif.path}`
+          }]
+        };
+      }
+      
       const gifData = await fs.readFile(latestGif.path);
       const base64 = gifData.toString("base64");
       
@@ -335,7 +348,7 @@ class ShareXMCPServer {
         content: [
           {
             type: "text",
-            text: `Latest GIF: ${latestGif.name} (${new Date(latestGif.mtime).toLocaleString()})`
+            text: `Latest GIF: ${latestGif.name} (${new Date(latestGif.mtime).toLocaleString()}) - ${(stats.size / 1024).toFixed(2)}KB`
           },
           {
             type: "image",
@@ -367,6 +380,20 @@ class ShareXMCPServer {
     }
 
     try {
+      // Check file size first
+      const stats = await fs.stat(file.path);
+      const maxSize = file.type === "image/gif" ? 10 * 1024 * 1024 : 50 * 1024 * 1024; // 10MB for GIFs, 50MB for images
+      
+      if (stats.size > maxSize) {
+        const sizeLimit = file.type === "image/gif" ? "10MB" : "50MB";
+        return {
+          content: [{
+            type: "text",
+            text: `File: ${file.name} (${new Date(file.mtime).toLocaleString()})\nFile size: ${(stats.size / 1024 / 1024).toFixed(2)}MB\n\nNote: File is too large to display directly (>${sizeLimit}). File location: ${file.path}`
+          }]
+        };
+      }
+      
       const imageData = await fs.readFile(file.path);
       const base64 = imageData.toString("base64");
       
@@ -374,7 +401,7 @@ class ShareXMCPServer {
         content: [
           {
             type: "text",
-            text: `Screenshot: ${file.name} (${new Date(file.mtime).toLocaleString()})`
+            text: `${file.type === "image/gif" ? "GIF" : "Screenshot"}: ${file.name} (${new Date(file.mtime).toLocaleString()}) - ${(stats.size / 1024).toFixed(2)}KB`
           },
           {
             type: "image",
@@ -387,7 +414,7 @@ class ShareXMCPServer {
       return {
         content: [{
           type: "text",
-          text: `Failed to read screenshot: ${error}`
+          text: `Failed to read file: ${error}`
         }]
       };
     }

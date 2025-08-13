@@ -36,7 +36,7 @@ async function init() {
     // Clone repository
     spinner.start("Downloading ShareX MCP Server...");
     try {
-      execSync(`git clone https://github.com/yourusername/sharex-mcp-server.git "${installPath}"`, { stdio: "ignore" });
+      execSync(`git clone https://github.com/hellocory/sharex-mcp-server.git "${installPath}"`, { stdio: "ignore" });
     } catch {
       // Fallback to npm pack
       execSync(`npm pack sharex-mcp-server`, { cwd: installPath, stdio: "ignore" });

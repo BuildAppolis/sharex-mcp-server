@@ -6,9 +6,10 @@ An MCP (Model Context Protocol) server that bridges ShareX screenshots from Wind
 
 ### Components
 
-1. **MCP Server (Windows)** - Runs on Windows host, monitors ShareX screenshot directory
-2. **ShareX Configuration** - Auto-saves screenshots to `D:/Coding/BuildAppolis/sharex-mcp-server/screenshots`
-3. **MCP Tools** - Provides tools like `check_latest_screenshots` and `check_latest_gif`
+1. **ShareX (Windows)** - Screenshot capture tool that saves images/GIFs
+2. **MCP Server (Windows)** - Runs on Windows, monitors ShareX screenshot directory
+3. **Claude Code** - Can run on Windows or WSL, connects to the MCP server
+4. **MCP Tools** - Provides tools like `check_latest_screenshots` and `check_latest_gif`
 
 ### Features
 
@@ -20,17 +21,14 @@ An MCP (Model Context Protocol) server that bridges ShareX screenshots from Wind
 
 ## Quick Installation
 
+The MCP server must be installed on Windows (where ShareX runs). Choose one of these methods:
+
 ### One-Line Install (Windows PowerShell)
 ```powershell
-iwr -useb https://raw.githubusercontent.com/yourusername/sharex-mcp-server/main/setup.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/setup.ps1 | iex
 ```
 
-### One-Line Install (WSL/Linux/macOS)
-```bash
-curl -sSL https://raw.githubusercontent.com/yourusername/sharex-mcp-server/main/setup.sh | bash
-```
-
-### NPX Install (Cross-platform)
+### NPX Install (Windows)
 ```bash
 npx sharex-mcp-server init
 ```

@@ -51,10 +51,40 @@ pnpm install
 Write-Host "Building project..." -ForegroundColor Yellow
 pnpm build
 
-# Run the CLI installer
-Write-Host "Running configuration..." -ForegroundColor Yellow
-node dist/cli.js install
+# Configure MCP for Claude Code
+Write-Host "Configuring Claude Code..." -ForegroundColor Yellow
+
+# Create .mcp.json configuration for Windows
+$mcpConfigPath = "$env:USERPROFILE\.mcp.json"
+$serverPath = "$installDir\dist\index.js"
+
+# Check if .mcp.json exists and back it up
+if (Test-Path $mcpConfigPath) {
+    Write-Host "Backing up existing .mcp.json to .mcp.json.backup" -ForegroundColor Yellow
+    Copy-Item $mcpConfigPath "$mcpConfigPath.backup"
+}
+
+# Create the MCP configuration
+$mcpConfig = @{
+    mcpServers = @{
+        sharex = @{
+            command = "node"
+            args = @($serverPath.Replace('\', '\\'))
+            env = @{}
+        }
+    }
+} | ConvertTo-Json -Depth 10
+
+Set-Content -Path $mcpConfigPath -Value $mcpConfig
+Write-Host "Created MCP configuration at: $mcpConfigPath" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "Installation complete!" -ForegroundColor Green
-Write-Host "ShareX MCP Server has been installed and configured." -ForegroundColor Green
+Write-Host ""
+Write-Host "Next steps:" -ForegroundColor Cyan
+Write-Host "1. Restart Claude Code to load the MCP server"
+Write-Host "2. Take a screenshot with ShareX"
+Write-Host "3. Tell Claude: 'look at my latest screenshot'"
+Write-Host ""
+Write-Host "Configuration file: $mcpConfigPath" -ForegroundColor Yellow
+Write-Host "Server location: $serverPath" -ForegroundColor Yellow

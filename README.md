@@ -21,31 +21,108 @@ An MCP (Model Context Protocol) server that bridges ShareX screenshots from Wind
 
 ## Quick Installation
 
-The MCP server must be installed on Windows (where ShareX runs). Choose one of these methods:
+The MCP server runs on Windows (where ShareX is installed) and can be accessed from both Windows and WSL environments.
 
-### One-Line Install (Windows PowerShell)
+### For Windows Users
+
+#### One-Line Install (PowerShell)
 ```powershell
 iwr -useb https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/setup.ps1 | iex
 ```
 
-### NPX Install (Windows)
+This will:
+- Install the MCP server in `%USERPROFILE%\sharex-mcp-server`
+- Configure Claude Code automatically
+- Create `.mcp.json` in your Windows user directory
+
+### For WSL Users
+
+#### One-Line Install (Bash)
 ```bash
-npx sharex-mcp-server init
+curl -fsSL https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/install.sh | bash
 ```
 
+This will:
+- Install the MCP server on your Windows filesystem (accessible from WSL)
+- Configure Claude Code for both WSL and Windows
+- Create `.mcp.json` in both WSL home and Windows user directory
+
 ### Manual Installation
-```bash
+
+#### Windows (PowerShell)
+```powershell
 # Clone the repository
-git clone https://github.com/yourusername/sharex-mcp-server.git
+git clone https://github.com/hellocory/sharex-mcp-server.git
 cd sharex-mcp-server
 
 # Install dependencies
 pnpm install
 
-# Build and configure
+# Build
 pnpm build
-node dist/cli.js install
+
+# Configure MCP
+$mcpConfig = @{
+    mcpServers = @{
+        sharex = @{
+            command = "node"
+            args = @("$PWD\dist\index.js")
+            env = @{}
+        }
+    }
+} | ConvertTo-Json -Depth 10
+
+Set-Content -Path "$env:USERPROFILE\.mcp.json" -Value $mcpConfig
 ```
+
+#### WSL (Bash)
+```bash
+# Navigate to Windows filesystem
+cd /mnt/c/Users/$USER
+
+# Clone the repository
+git clone https://github.com/hellocory/sharex-mcp-server.git
+cd sharex-mcp-server
+
+# Install dependencies
+pnpm install
+
+# Build
+pnpm build
+
+# Configure MCP for WSL
+cat > ~/.mcp.json << EOF
+{
+  "mcpServers": {
+    "sharex": {
+      "command": "node",
+      "args": ["$(pwd)/dist/index.js"],
+      "env": {}
+    }
+  }
+}
+EOF
+```
+
+## Cross-Platform Compatibility
+
+### Windows + WSL Setup
+
+The ShareX MCP Server is designed to work seamlessly across Windows and WSL environments:
+
+1. **ShareX** runs on Windows and captures screenshots
+2. **MCP Server** runs on Windows (installed in Windows filesystem)
+3. **Claude Code** can run on either:
+   - **Windows**: Uses native Windows paths in `.mcp.json`
+   - **WSL**: Uses WSL-mounted paths (e.g., `/mnt/c/...`) in `.mcp.json`
+
+Both environments access the same MCP server instance running on Windows, ensuring consistent screenshot access regardless of where Claude Code is running.
+
+### Path Mapping
+
+The installers automatically handle path conversion:
+- Windows: `C:\Users\YourName\sharex-mcp-server\dist\index.js`
+- WSL: `/mnt/c/Users/YourName/sharex-mcp-server/dist/index.js`
 
 ## Configuration
 

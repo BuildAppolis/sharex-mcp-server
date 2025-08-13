@@ -1,243 +1,168 @@
 # ShareX MCP Server
 
-An MCP (Model Context Protocol) server that bridges ShareX screenshots from Windows to WSL environments, enabling seamless media sharing for AI assistants.
+A Model Context Protocol (MCP) server that seamlessly integrates ShareX screenshots and GIFs with Claude Code, enabling AI-powered analysis of your visual content.
 
-## Architecture
+Built by [BuildAppolis](https://www.buildappolis.com) - *Building the future, one app at a time.*
 
-### Components
+## Features
 
-1. **ShareX (Windows)** - Screenshot capture tool that saves images/GIFs
-2. **MCP Server (Windows)** - Runs on Windows, monitors ShareX screenshot directory
-3. **Claude Code** - Can run on Windows or WSL, connects to the MCP server
-4. **MCP Tools** - Provides tools like `check_latest_screenshots` and `check_latest_gif`
+### 📸 Screenshot Management
+- **Instant Access**: View your latest screenshots directly in Claude Code
+- **Multi-Screenshot Support**: Retrieve up to 5 recent screenshots at once
+- **Smart Caching**: Tracks your 10 most recent screenshots automatically
+- **File Metadata**: See file sizes, timestamps, and types at a glance
 
-### Features
+### 🎬 Advanced GIF Handling
+- **Automatic Frame Extraction**: GIFs are automatically broken down into individual frames
+- **Indexed Selection**: Access GIFs by number (1-5) for easy reference
+- **Smart Frame Sampling**: Intelligently selects frames from long GIFs
+- **Large File Support**: Handles GIFs up to 50MB with graceful degradation
+- **Frame Caching**: Extracted frames are cached for instant access
 
-- Real-time screenshot monitoring
-- Support for images (PNG, JPG) and GIFs
-- Metadata tracking (timestamp, dimensions, file size)
-- Efficient caching and retrieval
-- WSL-accessible endpoints
+### 🔄 Real-Time Monitoring
+- **Live Updates**: Automatically detects new screenshots as you take them
+- **File Watching**: Monitors your ShareX screenshot directory in real-time
+- **Auto-Cleanup**: Maintains optimal performance by managing cache limits
 
-## Quick Installation
+## Quick Start
 
-The MCP server runs on Windows (where ShareX is installed) and can be accessed from both Windows and WSL environments.
+### Prerequisites
+- Windows 10/11 or WSL
+- [ShareX](https://getsharex.com/) installed and configured
+- [Claude Code](https://claude.ai/download) installed
+- Node.js 18+ (for installation)
 
-### For Windows Users
-
-#### One-Line Install (PowerShell)
-```powershell
-iwr -useb https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/setup.ps1 | iex
-```
-
-This will:
-- Install the MCP server in `%USERPROFILE%\sharex-mcp-server`
-- Configure Claude Code automatically
-- Create `.mcp.json` in your Windows user directory
-
-### For WSL Users
-
-#### One-Line Install (Bash)
-```bash
-curl -fsSL https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/install.sh | bash
-```
-
-This will:
-- Install the MCP server on your Windows filesystem (accessible from WSL)
-- Configure Claude Code for both WSL and Windows
-- Create `.mcp.json` in both WSL home and Windows user directory
-
-### Manual Installation
+### Installation
 
 #### Windows (PowerShell)
 ```powershell
-# Clone the repository
-git clone https://github.com/hellocory/sharex-mcp-server.git
-cd sharex-mcp-server
-
-# Install dependencies
-pnpm install
-
-# Build
-pnpm build
-
-# Configure MCP
-$mcpConfig = @{
-    mcpServers = @{
-        sharex = @{
-            command = "node"
-            args = @("$PWD\dist\index.js")
-            env = @{}
-        }
-    }
-} | ConvertTo-Json -Depth 10
-
-Set-Content -Path "$env:USERPROFILE\.mcp.json" -Value $mcpConfig
+# One-line installer
+iwr -useb https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/setup.ps1 | iex
 ```
 
-#### WSL (Bash)
+#### WSL/Linux
 ```bash
-# Navigate to Windows filesystem
-cd /mnt/c/Users/$USER
-
-# Clone the repository
-git clone https://github.com/hellocory/sharex-mcp-server.git
-cd sharex-mcp-server
-
-# Install dependencies
-pnpm install
-
-# Build
-pnpm build
-
-# Configure MCP for WSL
-cat > ~/.mcp.json << EOF
-{
-  "mcpServers": {
-    "sharex": {
-      "command": "node",
-      "args": ["$(pwd)/dist/index.js"],
-      "env": {}
-    }
-  }
-}
-EOF
+# One-line installer
+curl -fsSL https://raw.githubusercontent.com/hellocory/sharex-mcp-server/main/install.sh | bash
 ```
 
-## Cross-Platform Compatibility
+The installer will:
+1. Download and install the MCP server
+2. Register it with Claude Code automatically
+3. Configure everything for immediate use
 
-### Windows + WSL Setup
+### Verify Installation
+```bash
+# Check if the server is registered
+claude mcp list
 
-The ShareX MCP Server is designed to work seamlessly across Windows and WSL environments:
+# You should see:
+# sharex: ✓ Connected
+```
 
-1. **ShareX** runs on Windows and captures screenshots
-2. **MCP Server** runs on Windows (installed in Windows filesystem)
-3. **Claude Code** can run on either:
-   - **Windows**: Uses native Windows paths in `.mcp.json`
-   - **WSL**: Uses WSL-mounted paths (e.g., `/mnt/c/...`) in `.mcp.json`
+## Usage
 
-Both environments access the same MCP server instance running on Windows, ensuring consistent screenshot access regardless of where Claude Code is running.
+### Basic Commands
 
-### Path Mapping
+Once installed, just ask Claude:
 
-The installers automatically handle path conversion:
-- Windows: `C:\Users\YourName\sharex-mcp-server\dist\index.js`
-- WSL: `/mnt/c/Users/YourName/sharex-mcp-server/dist/index.js`
+- **"Look at my latest screenshot"** - Shows your most recent screenshot
+- **"Check my latest GIF"** - Automatically extracts and displays frames from your latest GIF
+- **"Show me the last 3 screenshots"** - Displays multiple recent screenshots
+- **"List my GIFs"** - Shows numbered list of available GIFs
+- **"Show GIF number 2"** - Displays the second most recent GIF
+
+### Taking Screenshots with ShareX
+
+1. Press your ShareX hotkey (default: `PrtScn`)
+2. Capture your screen area
+3. Ask Claude to view it immediately - no file navigation needed!
+
+### Recording GIFs with ShareX
+
+1. Press your ShareX GIF hotkey (default: `Shift+PrtScn`)
+2. Record your screen
+3. Stop recording
+4. Ask Claude to view the GIF - frames are extracted automatically!
+
+## Features in Action
+
+### Smart GIF Processing
+When you ask to see a GIF, the server:
+- Detects the GIF format automatically
+- Extracts up to 10 representative frames
+- Shows frame numbers and metadata
+- Caches the extraction for instant replay
+
+### Indexed Access
+```
+User: "List my GIFs"
+Claude: Available GIFs:
+1. screen_recording.gif - 2.3 MB - 2 mins ago
+2. demo_animation.gif - 1.1 MB - 10 mins ago
+3. bug_report.gif - 4.5 MB - 1 hour ago
+
+User: "Show number 3"
+Claude: [Displays frames from bug_report.gif]
+```
 
 ## Configuration
 
-### How It Works
+The MCP server uses ShareX's default screenshot location automatically. If you've customized your ShareX settings, the server will detect and use your custom path.
 
-The ShareX MCP Server reads screenshots directly from your existing ShareX folder without modifying or moving them. It maintains a cache of the most recent screenshots (default: 10 images, 5 GIFs) and automatically removes older entries from its cache when limits are reached.
-
-### Environment Variables
-
-You can configure the server behavior using environment variables:
-
-```bash
-# Maximum number of recent images to track (default: 10)
-SHAREX_MAX_IMAGES=10
-
-# Maximum number of recent GIFs to track (default: 5)
-SHAREX_MAX_GIFS=5
-
-# Custom ShareX screenshots path (auto-detected by default)
-SHAREX_PATH="C:/Users/YourName/Documents/ShareX/Screenshots"
-
-# Disable auto-detection of ShareX path
-SHAREX_AUTO_DETECT=false
-```
-
-### Claude Code Configuration
-
-After installation, add the MCP server to your Claude Code settings:
-
-**Windows** (`%USERPROFILE%\.claude\settings.json`):
-```json
-{
-  "mcpServers": {
-    "sharex": {
-      "command": "node",
-      "args": ["C:/Users/YourName/sharex-mcp-server/dist/index.js"],
-      "env": {
-        "SHAREX_MAX_IMAGES": "10",
-        "SHAREX_MAX_GIFS": "5"
-      }
-    }
-  }
-}
-```
-
-**WSL/Linux** (`~/.claude/settings.json`):
-```json
-{
-  "mcpServers": {
-    "sharex": {
-      "command": "node",
-      "args": ["/mnt/c/Users/YourName/sharex-mcp-server/dist/index.js"],
-      "env": {
-        "SHAREX_MAX_IMAGES": "10",
-        "SHAREX_MAX_GIFS": "5"
-      }
-    }
-  }
-}
-```
-
-## MCP Tools Available
-
-### `check_latest_screenshots`
-Get the most recent screenshots (up to 5)
-
-**Parameters:**
-- `count` (optional): Number of screenshots to retrieve (1-5, default: 1)
-
-**Example:**
-```
-"look at my latest screenshot"
-"show me the last 3 screenshots"
-```
-
-### `check_latest_gif`
-Get the most recent GIF file
-
-**Example:**
-```
-"look at my latest gif"
-"show me the most recent gif"
-```
-
-### `get_screenshot_by_name`
-Retrieve a specific screenshot by filename
-
-**Parameters:**
-- `filename` (required): The filename of the screenshot
-
-**Example:**
-```
-"get screenshot named 'example.png'"
-```
-
-### `list_screenshots`
-List all available screenshots with metadata
-
-**Parameters:**
-- `limit` (optional): Maximum number of screenshots to list (default: 20)
-
-**Example:**
-```
-"list all my screenshots"
-"show me available screenshots"
-```
+### Default Limits
+- **Screenshots**: Tracks 10 most recent
+- **GIFs**: Tracks 5 most recent
+- **Frames per GIF**: Extracts up to 10 frames
+- **Max GIF size**: 50MB
 
 ## Troubleshooting
 
-### Server not detecting screenshots
-1. Ensure ShareX is saving to the correct directory
-2. Check file permissions on the screenshots folder
-3. Verify the server is running and watching the directory
+### Server Not Connected
+```bash
+# Re-register the server
+claude mcp remove sharex
+claude mcp add sharex --scope user -- cmd /c node "C:\Users\%USERNAME%\sharex-mcp-server\dist\index.js"
+```
 
-### WSL connection issues
-1. Ensure the Windows path is correctly mapped to WSL (e.g., `D:` → `/mnt/d`)
-2. Check that Node.js is accessible from WSL
-3. Verify the MCP server configuration in Claude Code settings
+### Can't See Screenshots
+1. Ensure ShareX is saving to Documents\ShareX\Screenshots
+2. Take a new screenshot to trigger detection
+3. Check server status: `claude mcp list`
+
+### GIF Issues
+- GIFs over 50MB will show metadata only
+- Corrupted GIFs will display an error message
+- Try recording a shorter GIF if extraction fails
+
+## Uninstall
+
+### Windows
+```powershell
+claude mcp remove sharex
+Remove-Item -Recurse -Force "$env:USERPROFILE\sharex-mcp-server"
+```
+
+### WSL
+```bash
+claude mcp remove sharex
+rm -rf ~/sharex-mcp-server
+```
+
+## Contributing
+
+Want to help improve ShareX MCP Server? Check out our [Contributing Guide](CONTRIBUTING.md) for development setup and guidelines.
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/hellocory/sharex-mcp-server/issues)
+- **Updates**: [GitHub Releases](https://github.com/hellocory/sharex-mcp-server/releases)
+- **Developer**: [BuildAppolis](https://www.buildappolis.com)
+
+## License
+
+MIT License - See [LICENSE](LICENSE) file for details.
+
+---
+
+*ShareX MCP Server is a [BuildAppolis](https://www.buildappolis.com) project, crafted with care to enhance your AI-assisted workflow.*

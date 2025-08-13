@@ -1,7 +1,7 @@
 {
   "name": "sharex-mcp-server",
   "version": "1.0.0",
-  "description": "MCP server for bridging ShareX screenshots from Windows to WSL",
+  "description": "Model Context Protocol server for seamless ShareX integration with Claude Code - view screenshots and GIFs instantly",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
@@ -17,18 +17,35 @@
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "sharex",
     "screenshots",
+    "gifs",
     "claude",
+    "claude-code",
     "ai",
     "windows",
-    "wsl"
+    "wsl",
+    "buildappolis"
   ],
-  "author": "hellocory",
+  "author": {
+    "name": "BuildAppolis",
+    "url": "https://www.buildappolis.com"
+  },
+  "contributors": [
+    {
+      "name": "Cory",
+      "url": "https://github.com/hellocory"
+    }
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/hellocory/sharex-mcp-server.git"
+  },
+  "homepage": "https://github.com/hellocory/sharex-mcp-server#readme",
+  "bugs": {
+    "url": "https://github.com/hellocory/sharex-mcp-server/issues"
   },
   "files": [
     "dist",

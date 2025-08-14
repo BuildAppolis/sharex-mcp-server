@@ -1,3 +1,5 @@
+[![MSeeP.ai Security Assessment Badge](https://mseep.net/pr/buildappolis-sharex-mcp-server-badge.png)](https://mseep.ai/app/buildappolis-sharex-mcp-server)
+
 # ShareX MCP Server
 
 [![npm version](https://img.shields.io/npm/v/@buildappolis/sharex-mcp-server.svg)](https://www.npmjs.com/package/@buildappolis/sharex-mcp-server)
